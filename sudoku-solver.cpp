@@ -2,161 +2,119 @@
 #include <fstream>
 #include <string>
 
-struct InputData
+class Sudoku
 {
-    int argc;
-    char *argv;
+public:
+    struct Exception
+    {
+        Exception(const std::string &r) : reason(r)
+        {
+        }
+
+        std::string what() const
+        {
+            return reason;
+        }
+
+    private:
+        std::string reason;
+    };
+
+    Sudoku();
+
+    void loadData(int argc, const char *argv);
+    bool solve();
+
+    void print();
+    void printFancy();
+
+private:
+    int data[9][9];
+
+    void correctLenghtOfFile(std::ifstream &file);
+    int correctNumber(const std::string &token);
+
+    void readFromFile(const char *argv);
+    void readFromConsole();
+
+    bool numberInCol(int number, int col);
+    bool numberInRow(int number, int row);
+    bool numberInBox(int number, int rowBox, int colBox);
+
+    bool findEmptyCell(int &row, int &col);
+    bool isValidCell(int number, int row, int col);
 };
 
-bool loadData(InputData &input, unsigned short data[9][9]);
-bool correctLengthOfFile(std::ifstream &file);
-bool correctNumber(std::string &token, unsigned short &number);
+//public
 
-bool numberInCol(unsigned short data[9][9], unsigned short &number, unsigned short &col);
-bool numberInRow(unsigned short data[9][9], unsigned short &number, unsigned short &row);
-bool numberInBox(unsigned short data[9][9], unsigned short &number, unsigned short rowBox, unsigned short colBox);
-bool findEmptyCell(unsigned short data[9][9], unsigned short &row, unsigned short &col);
-bool isValidCell(unsigned short data[9][9], unsigned short &number, unsigned short &row, unsigned short &col);
-
-bool solveSudoku(unsigned short data[9][9]);
-
-void printSudoku(unsigned short data[9][9]);
-void printFancySudoku(unsigned short data[9][9]);
-
-int main(int argc, char **argv)
+Sudoku::Sudoku()
 {
-    InputData dataStruct{argc, argv[1]};
-    unsigned short sudokuData[9][9];
-
-    if (!loadData(dataStruct, sudokuData))
+    for (auto row = 0; row != 9; ++row)
     {
-        return -1;
+        for (auto col = 0; col != 9; ++col)
+        {
+            data[row][col] = 0;
+        }
     }
+}
 
-    if (solveSudoku(sudokuData))
+void Sudoku::loadData(int argc, const char *argv)
+{
+    if (argc > 1)
     {
-        //printSudoku(sudokuData);
-        printFancySudoku(sudokuData);
+        this->readFromFile(argv);
     }
     else
     {
-        std::cout << "NO SOLUTION EXISTS" << std::endl;
+        std::cout<<"Enter data:\n";
+        readFromConsole();
     }
 
-    return 0;
+    std::cout << "Data successfully loaded\n";
 }
 
-bool loadData(InputData &input, unsigned short data[9][9])
+bool Sudoku::solve()
 {
-    std::string token;
-    unsigned short number;
+    int row = 0;
+    int col = 0;
 
-    //input from file
-    if (input.argc > 1)
+    if (!findEmptyCell(row, col))
     {
-        std::ifstream file(input.argv);
+        return true;
+    }
 
-        if (!file.is_open())
+    for (auto number = 1; number <= 9; ++number)
+    {
+        if (isValidCell(number, row, col))
         {
-            std::cout << "error: could not read file " << input.argv << std::endl;
-            return false;
-        }
-
-        if (!correctLengthOfFile(file))
-        {
-            std::cout << "error: input data has incorrect number of items " << std::endl;
-            return false;
-        }
-
-        for (auto row = 0; row < 9; ++row)
-        {
-            for (auto col = 0; col < 9; ++col)
+            data[row][col] = number;
+            if (solve())
             {
-                file >> token;
-                if (!correctNumber(token, number))
-                {
-                    std::cout << "error: input data is incorrect " << token << std::endl;
-                    return false;
-                }
-                data[row][col] = number;
+                return true;
             }
-        }
-
-        file.close();
-    }
-
-    //input from console
-    else
-    {
-        for (auto row = 0; row < 9; ++row)
-        {
-            for (auto col = 0; col < 9; ++col)
-            {
-                std::cin >> token;
-                if (!correctNumber(token, number))
-                {
-                    std::cout << "error: input data is incorrect " << token << std::endl;
-                    return false;
-                }
-                data[row][col] = number;
-            }
+            data[row][col] = 0;
         }
     }
-
-    std::cout << "Data successfully loaded" << std::endl
-              << std::endl;
-    return true;
+    return false;
 }
 
-bool correctLengthOfFile(std::ifstream &file)
+void Sudoku::print()
 {
-    file.seekg(0, file.end);
-    auto length = file.tellg();
-    file.seekg(0, file.beg);
-
-    if (length != 161 && length != 162)
+    for (auto row = 0; row != 9; ++row)
     {
-        return false;
-    }
-    return true;
-}
-
-bool correctNumber(std::string &token, unsigned short &number)
-{
-    try
-    {
-        number = std::stoi(token);
-    }
-    catch (...)
-    {
-        return false;
-    }
-
-    if (!(number >= 0 || number <= 9))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-void printSudoku(unsigned short data[9][9])
-{
-    for (auto row = 0; row < 9; ++row)
-    {
-        for (auto col = 0; col < 9; ++col)
+        for (auto col = 0; col != 9; ++col)
         {
             std::cout << data[row][col] << " ";
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
 }
 
-void printFancySudoku(unsigned short data[9][9])
+void Sudoku::printFancy()
 {
-    for (auto row = 0; row < 9; ++row)
+    for (auto row = 0; row != 9; ++row)
     {
-        for (auto col = 0; col < 9; ++col)
+        for (auto col = 0; col != 9; ++col)
         {
             if (col == 3 || col == 6)
             {
@@ -166,16 +124,94 @@ void printFancySudoku(unsigned short data[9][9])
         }
         if (row == 2 || row == 5)
         {
-            std::cout << std::endl;
-            std::cout << std::string(21, '-');
+            std::cout << "\n"
+                      << std::string(21, '-');
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
 }
 
-bool numberInCol(unsigned short data[9][9], unsigned short &number, unsigned short &col)
+//private
+
+void Sudoku::correctLenghtOfFile(std::ifstream &file)
 {
-    for (auto row = 0; row < 9; ++row)
+    auto length = file.tellg();
+    file.seekg(0, file.beg);
+
+    if (length != 161 && length != 162)
+    {
+        throw Exception("input data has incorrect number of items");
+    }
+}
+
+int Sudoku::correctNumber(const std::string &token)
+{
+    int number = 0;
+    try
+    {
+        number = std::stoi(token);
+    }
+    catch (...)
+    {
+        throw Exception("input data is incorrect");
+    }
+
+    if (!(number >= 0 || number <= 9))
+    {
+        throw Exception("input data is incorrect");
+    }
+
+    return number;
+}
+
+void Sudoku::readFromFile(const char *argv)
+{
+    std::string token;
+    int number;
+
+    std::ifstream file(argv, std::ifstream::ate);
+
+    if (!file.is_open())
+    {
+        throw Exception("could not read file");
+    }
+
+    this->correctLenghtOfFile(file);
+
+    for (auto row = 0; row != 9; ++row)
+    {
+        for (auto col = 0; col != 9; ++col)
+        {
+            file >> token;
+            number = this->correctNumber(token);
+
+            data[row][col] = number;
+        }
+    }
+
+    file.close();
+}
+
+void Sudoku::readFromConsole()
+{
+    std::string token;
+    int number;
+
+    for (auto row = 0; row != 9; ++row)
+    {
+        for (auto col = 0; col != 9; ++col)
+        {
+            std::cin >> token;
+            number = this->correctNumber(token);
+
+            data[row][col] = number;
+        }
+    }
+}
+
+bool Sudoku::numberInCol(int number, int col)
+{
+    for (auto row = 0; row != 9; ++row)
     {
         if (data[row][col] == number)
         {
@@ -185,9 +221,9 @@ bool numberInCol(unsigned short data[9][9], unsigned short &number, unsigned sho
     return false;
 }
 
-bool numberInRow(unsigned short data[9][9], unsigned short &number, unsigned short &row)
+bool Sudoku::numberInRow(int number, int row)
 {
-    for (auto col = 0; col < 9; ++col)
+    for (auto col = 0; col != 9; ++col)
     {
         if (data[row][col] == number)
         {
@@ -197,11 +233,11 @@ bool numberInRow(unsigned short data[9][9], unsigned short &number, unsigned sho
     return false;
 }
 
-bool numberInBox(unsigned short data[9][9], unsigned short &number, unsigned short rowBox, unsigned short colBox)
+bool Sudoku::numberInBox(int number, int rowBox, int colBox)
 {
-    for (auto row = 0; row < 3; ++row)
+    for (auto row = 0; row != 3; ++row)
     {
-        for (auto col = 0; col < 3; ++col)
+        for (auto col = 0; col != 3; ++col)
         {
             if (data[row + rowBox][col + colBox] == number)
             {
@@ -212,11 +248,11 @@ bool numberInBox(unsigned short data[9][9], unsigned short &number, unsigned sho
     return false;
 }
 
-bool findEmptyCell(unsigned short data[9][9], unsigned short &row, unsigned short &col)
+bool Sudoku::findEmptyCell(int &row, int &col)
 {
-    for (row = 0; row < 9; ++row)
+    for (row = 0; row != 9; ++row)
     {
-        for (col = 0; col < 9; ++col)
+        for (col = 0; col != 9; ++col)
         {
             if (data[row][col] == 0)
             {
@@ -227,35 +263,39 @@ bool findEmptyCell(unsigned short data[9][9], unsigned short &row, unsigned shor
     return false;
 }
 
-bool isValidCell(unsigned short data[9][9], unsigned short &number, unsigned short &row, unsigned short &col)
+bool Sudoku::isValidCell(int number, int row, int col)
 {
-    if (!numberInRow(data, number, row) && !numberInCol(data, number, col) && !numberInBox(data, number, row - row % 3, col - col % 3))
+    if (!numberInRow(number, row) && !numberInCol(number, col) && !numberInBox(number, row - row % 3, col - col % 3))
     {
         return true;
     }
     return false;
 }
 
-bool solveSudoku(unsigned short data[9][9])
-{
-    unsigned short row = 0;
-    unsigned short col = 0;
+//main
 
-    if (!findEmptyCell(data, row, col))
+int main(int argc, char **argv)
+{
+    Sudoku sudoku;
+
+    try
     {
-        return true;
+        sudoku.loadData(argc, argv[1]);
     }
-    for (unsigned short number = 1; number <= 9; ++number)
+    catch (Sudoku::Exception e)
     {
-        if (isValidCell(data, number, row, col))
-        {
-            data[row][col] = number;
-            if (solveSudoku(data))
-            {
-                return true;
-            }
-            data[row][col] = 0;
-        }
+        std::cerr << e.what() << '\n';
+        return -1;
     }
-    return false;
+
+    if (sudoku.solve())
+    {
+        sudoku.printFancy();
+    }
+    else
+    {
+        std::cout << "NO SOLUTION EXISTS\n";
+    }
+
+    return 0;
 }
