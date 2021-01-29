@@ -1,12 +1,12 @@
 # Makefile
 
 main:	clean
-	g++ sudoku-solver.cpp -o sudoku-solver.exe
-	@./sudoku-solver.exe ./data
+	g++ sudoku-solver.cpp -o sudoku-solver
+	@./sudoku-solver ./data
 
 input:	clean
-	g++ sudoku-solver.cpp -o sudoku-solver.exe
-	@./sudoku-solver.exe
+	g++ sudoku-solver.cpp -o sudoku-solver
+	@./sudoku-solver
 
 clean:
-	@rm -f sudoku-solver.exe
+	@rm -f sudoku-solver

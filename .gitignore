@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+sudoku-solver
 
 # Folders
 .vscode
